@@ -7,7 +7,12 @@ import {
   Modal,
   StyleSheet,
   Animated,
+  Dimensions,
 } from 'react-native';
+import DefaultModal from './DefaultModal';
+
+const DEVICES_WIDTH = Dimensions.get('window').width;
+const DEVICES_HEIGHT = Dimensions.get('window').height;
 
 export default class ExitConfirm extends Component {
   constructor(props) {
@@ -15,12 +20,15 @@ export default class ExitConfirm extends Component {
 
     this.state = {
       modalVisible: false,
+      modalHeight: 0,
+      modalWidth: 0
     };
   
     this.anima = new Animated.Value(0);
 
     this.handlePressBack = this.handlePressBack.bind(this);
     this.hideModal = this.hideModal.bind(this);
+    this.setModalSize = this.setModalSize.bind(this);
   }
 
   componentDidMount() {
@@ -51,16 +59,23 @@ export default class ExitConfirm extends Component {
   hideModal() {
     this.setState({ modalVisible: false });
   }
+
+  setModalSize(event) {
+    const modalHeight = event.nativeEvent.layout.height;
+    const modalWidth = event.nativeEvent.layout.width;
+    this.setState({ modalHeight, modalWidth });
+  }
   
   render() {
-    const mantap = this.anima.interpolate({
+    const sideAnima = this.anima.interpolate({
       inputRange: [0, 1],
-      outputRange: [0, 50],
+      outputRange: [0, (DEVICES_WIDTH - 200) / 2],
     });
 
     return (
       <View style={{ flex: 1 }}>
         {this.props.children}
+        <Text>{DEVICES_WIDTH} {JSON.stringify(this.state)}</Text>
         <Modal
           animationType={"none"}
           transparent={true}
@@ -68,12 +83,9 @@ export default class ExitConfirm extends Component {
           onRequestClose={this.hideModal}
         >
          <View style={styles.modalContainer}>
-          <Animated.View style={{ transform: [{ translateX: mantap }] }}>
-            <View style={styles.content}>
-              <Text>Hello World!</Text>
-              <TouchableOpacity onPress={this.hideModal}>
-                <Text>Hide Modal</Text>
-              </TouchableOpacity>
+          <Animated.View style={{ transform: [{ translateX: sideAnima }] }}>
+            <View onLayout={this.setModalSize}>
+              {this.props.modal()}
             </View>
           </Animated.View>
          </View>
@@ -89,15 +101,20 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: 'rgba(0, 0, 0, 0.5)'
   },
-  modalContent: {
-    width: 200,
-  },
   content: {
     borderRadius: 360,
     backgroundColor: '#ccc',
   },
 });
 
+ExitConfirm.defaultProps = {
+  modal: () => <DefaultModal />,
+}
+
 ExitConfirm.propTypes = {
   children: PropTypes.element.isRequired,
+  modal: PropTypes.oneOfType([
+    PropTypes.func,
+    PropTypes.element
+  ])
 };
